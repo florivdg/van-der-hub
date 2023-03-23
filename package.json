@@ -20,6 +20,7 @@
     "vite-node": "^0.29.7"
   },
   "dependencies": {
+    "fastify": "^4.15.0",
     "ws": "^8.13.0"
   }
 }
