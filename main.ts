@@ -1,6 +1,4 @@
-import { WebSocketServer } from 'https://deno.land/x/websocket@v0.1.4/mod.ts'
-import { serve } from 'https://deno.land/std@0.181.0/http/server.ts'
-import 'https://deno.land/std@0.181.0/dotenv/load.ts'
+import { WebSocketServer, serve } from './deps.ts'
 
 /// Check if the required environment variables are set
 if (!Deno.env.get('TOKEN')) {

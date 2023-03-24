@@ -1,0 +1,7 @@
+.vscode
+.env
+.env.sample
+.gitignore
+.prettierrc
+browser.txt
+README.md
