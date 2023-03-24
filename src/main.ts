@@ -11,7 +11,7 @@ const wss = new WebSocketServer({ path: '/live', port: 8787 })
  */
 const browser = new Proxy(
   {
-    value: 'unknown',
+    value: 'unknown', /// TODO: Initial persistent value (from disk?)
   },
   {
     set: (target, prop, value) => {
