@@ -1,10 +1,10 @@
-import WebSocket, { WebSocketServer } from 'ws'
-import Fastify from 'fastify'
+import { WebSocketServer } from 'https://deno.land/x/websocket@v0.1.4/mod.ts'
+import { serve } from 'https://deno.land/std@0.181.0/http/server.ts'
 
 /**
  * The WebSocket server.
  */
-const wss = new WebSocketServer({ path: '/live', port: 8787 })
+const wss = new WebSocketServer(8787)
 
 /**
  * Use a proxy to set the browser name and trigger side effects.
@@ -21,7 +21,7 @@ const browser = new Proxy(
 
         /// Send browser name to all clients
         wss.clients.forEach(function each(client) {
-          if (client.readyState === WebSocket.OPEN) {
+          if (client.state === WebSocket.OPEN) {
             client.send(value)
           }
         })
@@ -46,30 +46,21 @@ wss.on('connection', function connection(ws) {
 })
 
 /**
- * Simulate a browser name change.
+ * Handle HTTP requests.
+ * @param request The incoming HTTP request.
+ * @returns A HTTP response.
  */
-setTimeout(() => {
-  browser.value = 'com.google.Chrome'
-}, 10000)
+const handler = async (request: Request): Promise<Response> => {
+  const url = new URL(request.url)
+  if (request.method === 'POST' && url.pathname === '/set' && request.body) {
+    const body = await request.json()
+    browser.value = body.browser
 
-/**
- * The Fastify server.
- */
-const fastify = Fastify({
-  logger: false,
-})
+    return new Response('OK', { status: 200 })
+  }
 
-/**
- * POST /set
- * Set the browser name.
- */
-fastify.post<{ Body: { browser: string } }>('/set', async (request, reply) => {
-  /// TODO: Auth
-  browser.value = request.body.browser
-})
+  return new Response('Not Found', { status: 404 })
+}
 
-// Run the server!
-fastify.listen({ port: 8686 }, (err, address) => {
-  if (err) throw err
-  // Server is now listening on ${address}
-})
+/// Start the HTTP server
+await serve(handler, { port: 8686 })
