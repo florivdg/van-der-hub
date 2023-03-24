@@ -17,9 +17,27 @@ const wss = new WebSocketServer(8787)
  */
 const browser = new Proxy(
   {
-    value: 'unknown', /// TODO: Initial persistent value (from disk?)
+    value: '',
   },
   {
+    get: (target, prop) => {
+      if (prop === 'value') {
+        /// Check if there is value
+        if (!target.value) {
+          /// Try to read the browser name from disk
+          try {
+            const data = Deno.readFileSync('browser.txt')
+            const decoder = new TextDecoder()
+            target.value = decoder.decode(data)
+          } catch (error) {
+            /// Ignore errors
+            console.error(error)
+          }
+        }
+
+        return target.value
+      }
+    },
     set: (target, prop, value) => {
       if (prop === 'value') {
         /// Don't do anything if the value hasn't changed
@@ -32,6 +50,9 @@ const browser = new Proxy(
           }
         })
 
+        /// Persist the browser name to disk
+        persist(value)
+
         /// Set the internal value
         target.value = value
       }
@@ -40,6 +61,17 @@ const browser = new Proxy(
     },
   },
 )
+
+/**
+ * Persist the browser name to disk.
+ * @param browser The browser bundle ID to persist.
+ */
+const persist = async (browser: string) => {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(browser)
+
+  await Deno.writeFile('browser.txt', data)
+}
 
 /**
  * Handle WebSocket connections.
