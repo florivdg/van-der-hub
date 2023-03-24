@@ -1,5 +1,11 @@
 import { WebSocketServer } from 'https://deno.land/x/websocket@v0.1.4/mod.ts'
 import { serve } from 'https://deno.land/std@0.181.0/http/server.ts'
+import 'https://deno.land/std@0.181.0/dotenv/load.ts'
+
+/// Check if the required environment variables are set
+if (!Deno.env.get('TOKEN')) {
+  throw new Error('TOKEN environment variable is not set!')
+}
 
 /**
  * The WebSocket server.
@@ -53,6 +59,15 @@ wss.on('connection', function connection(ws) {
 const handler = async (request: Request): Promise<Response> => {
   const url = new URL(request.url)
   if (request.method === 'POST' && url.pathname === '/set' && request.body) {
+    /// Grab Bearer token from Authorization header
+    const auth = request.headers.get('Authorization')
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return new Response('No Bearer token, no access.', { status: 401 })
+    } else if (auth !== `Bearer ${Deno.env.get('TOKEN')}`) {
+      return new Response('Nice try.', { status: 401 })
+    }
+
+    /// We're all good, set the browser name
     const body = await request.json()
     browser.value = body.browser
 
