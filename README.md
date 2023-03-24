@@ -20,3 +20,7 @@ docker build --pull -t florivdg/default-browser-backend:0.1.0 .
 ```
 
 ### Run
+
+```shell
+docker run --name default-browser-backend --rm --env-file ./.env -p 8686:8686 -p 8787:8787 florivdg/default-browser-backend:0.1.0
+```
