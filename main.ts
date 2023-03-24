@@ -63,4 +63,4 @@ const handler = async (request: Request): Promise<Response> => {
 }
 
 /// Start the HTTP server
-serve(handler)
+await serve(handler, { port: 8686 })
