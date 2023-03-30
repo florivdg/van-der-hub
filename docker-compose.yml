@@ -9,3 +9,5 @@ services:
     ports:
       - '8686:8686'
       - '8787:8787'
+    volumes:
+      - ./browser.txt:/app/browser.txt
