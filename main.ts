@@ -79,6 +79,14 @@ wss.on('connection', function connection(ws) {
 
   /// Send browser name to client when it connects
   ws.send(browser.value)
+
+  /// Handle incoming WebSocket messages.
+  ///Answer every *ping* message with a *pong*.
+  ws.on('message', function (message: string) {
+    if (message === 'ping') {
+      ws.send('pong')
+    }
+  })
 })
 
 /**
