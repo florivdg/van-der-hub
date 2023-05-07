@@ -11,7 +11,7 @@ if (!Deno.env.get('TOKEN')) {
  */
 async function getDefaultBrowser(): Promise<string> {
   const db = await Deno.openKv()
-  const storedValue = await db.get<string>(['default_browser'])
+  const storedValue = await db.get<string>(['default_browser'], { consistency: 'eventual' })
 
   if (storedValue.value !== null) {
     return storedValue.value
