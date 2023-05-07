@@ -32,6 +32,11 @@ async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url)
 
   if (url.pathname === '/set' && req.method === 'POST') {
+    /// Make sure the request is authorized
+    const token = req.headers.get('Authorization')
+    if (!Deno.env.get('TOKEN') || token !== `Bearer ${Deno.env.get('TOKEN')}`) {
+      return new Response('Unauthorized', { status: 401 })
+    }
     const { browser } = await req.json()
     const db = await Deno.openKv()
     await db.set(['default_browser'], browser)
