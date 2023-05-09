@@ -1,9 +1,48 @@
-import { serve } from './deps.ts'
+import { Application, Router, load } from './deps.ts'
 
 /// Check if the required environment variables are set
-if (!Deno.env.get('TOKEN')) {
-  throw new Error('Environment variable "TOKEN" is not set!')
+let { TOKEN } = Deno.env.toObject()
+if (!TOKEN) {
+  /// In development, we need to load the .env file
+  /// On Deno Deploy, the environment variables are already set
+  const conf = await load()
+  TOKEN = conf.TOKEN
+
+  if (!TOKEN) throw new Error('Environment variable "TOKEN" is not set!')
 }
+
+// Create a new router instance
+const router = new Router()
+
+// Define the routes
+router
+  .get('/', (context) => {
+    context.response.body = 'Welcome on VanDerHub!'
+  })
+  .get('/browser/get', async (context) => {
+    const defaultBrowser = await getDefaultBrowser()
+    const json = JSON.stringify({ browser: defaultBrowser })
+    context.response.body = json
+    context.response.headers.set('content-type', 'application/json')
+  })
+  .post('/browser/set', async (context) => {
+    if (context.params && context.params.name) {
+      const name = context.params.name
+      context.response.body = `Hello, ${name}!`
+    }
+
+    /// Make sure the request is authorized
+    const token = context.request.headers.get('Authorization')
+    if (!TOKEN || token !== `Bearer ${TOKEN}`) {
+      context.response.body = 'Unauthorized'
+      context.response.status = 401
+    }
+    const { browser } = await context.request.body({ type: 'json' }).value
+    const db = await Deno.openKv()
+    await db.set(['default_browser'], browser)
+
+    context.response.body = 'OK'
+  })
 
 /**
  * Initialize the default browser value from the Deno.Kv storage
@@ -23,34 +62,20 @@ async function getDefaultBrowser(): Promise<string> {
   return initialValue
 }
 
-/**
- * Handle the incoming requests.
- * @param req The incoming request.
- * @returns A response.
- */
-async function handler(req: Request): Promise<Response> {
-  const url = new URL(req.url)
+// Create a new Oak application instance
+const app = new Application()
 
-  if (url.pathname === '/set' && req.method === 'POST') {
-    /// Make sure the request is authorized
-    const token = req.headers.get('Authorization')
-    if (!Deno.env.get('TOKEN') || token !== `Bearer ${Deno.env.get('TOKEN')}`) {
-      return new Response('Unauthorized', { status: 401 })
-    }
-    const { browser } = await req.json()
-    const db = await Deno.openKv()
-    await db.set(['default_browser'], browser)
+// Use the router middleware
+app.use(router.routes())
+app.use(router.allowedMethods())
 
-    return new Response('OK')
-  } else if (url.pathname === '/get' && req.method === 'GET') {
-    const defaultBrowser = await getDefaultBrowser()
-    const json = JSON.stringify({ browser: defaultBrowser })
-    return new Response(json, {
-      headers: { 'content-type': 'application/json' },
-    })
-  }
+// Add a not found route
+app.use((context) => {
+  context.response.status = 404
+  context.response.body = '404 Not Found'
+})
 
-  return new Response('Not Found', { status: 404 })
-}
-
-serve(handler)
+// Start the server
+const port = 8000
+console.log(`Listening on http://localhost:${port}`)
+await app.listen({ port })

@@ -1,2 +1,2 @@
-export { serve } from 'https://deno.land/std@0.186.0/http/server.ts'
-import 'https://deno.land/std@0.186.0/dotenv/load.ts'
+export { Application, Router } from 'https://deno.land/x/oak@v12.2.0/mod.ts'
+export { load } from 'https://deno.land/std@0.186.0/dotenv/mod.ts'
