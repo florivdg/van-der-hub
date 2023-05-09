@@ -1,7 +1,6 @@
-# Default Browser Backend
+# VanDerHub
 
-This broadcasts my current default browser to the interwebs.  
-Made with Deno and Web Streams. Runs on Deno Deploy.
+This tool serves as a central hub for utilities and dynamic server-based features on my personal website, flori.dev.
 
 ## Usage
 
@@ -9,4 +8,4 @@ Made with Deno and Web Streams. Runs on Deno Deploy.
 deno task start
 ```
 
-Make sure to set a `TOKEN` env var in order protect the `/set` route.
+Make sure to set a `TOKEN` env var in order protect routes.
