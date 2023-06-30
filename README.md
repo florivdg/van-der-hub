@@ -1,7 +1,6 @@
-# Default Browser Backend
+# VanDerHub
 
-This broadcasts my current default browser to the interwebs.  
-Made with Deno.
+This tool serves as a central hub for utilities and dynamic server-based features on my personal website, flori.dev.
 
 ## Usage
 
@@ -9,18 +8,4 @@ Made with Deno.
 deno task start
 ```
 
-Make sure to set a `TOKEN` env var in order protect set `/set` route.
-
-## Docker
-
-### Build
-
-```shell
-docker build --pull -t florivdg/default-browser-backend:0.1.1 .
-```
-
-### Run
-
-```shell
-docker run --name default-browser-backend --rm --env-file ./.env -p 8686:8686 -p 8787:8787 florivdg/default-browser-backend:0.1.1
-```
+Make sure to set a `TOKEN` env var in order protect routes.
