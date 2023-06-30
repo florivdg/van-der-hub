@@ -84,13 +84,18 @@ export const handleSetBrowser = async (context: Context) => {
  * @param context The oak context
  */
 export const handleLiveBrowser = (context: Context) => {
-  const target = context.sendEvents()
+  context.request.accepts('text/event-stream')
+
+  /// Set CORS headers
+  const headers = new Headers([['access-control-allow-origin', '*']])
+  context.response.headers = headers
+  const target = context.sendEvents({ keepAlive: true })
 
   /// Subscribe to changes to the default browser
   browser.subscribe((value) => {
-    target.dispatchMessage({ browser: value })
+    target.dispatchMessage(value)
   })
 
   /// Send the initial value
-  target.dispatchMessage({ browser: browser.value })
+  target.dispatchMessage(browser.value)
 }
