@@ -1,5 +1,7 @@
-import { Context } from './deps.ts'
+import { Context } from 'oak/mod.ts'
 import { isAuthorized } from './auth.ts'
+
+const kvKey = ['default_browser']
 
 /**
  * Initialize the default browser value from the Deno.Kv storage
@@ -7,7 +9,7 @@ import { isAuthorized } from './auth.ts'
  */
 async function getDefaultBrowser(): Promise<string> {
   const db = await Deno.openKv()
-  const storedValue = await db.get<string>(['default_browser'], { consistency: 'eventual' })
+  const storedValue = await db.get<string>(kvKey, { consistency: 'eventual' })
 
   if (storedValue.value !== null) {
     return storedValue.value
@@ -15,7 +17,7 @@ async function getDefaultBrowser(): Promise<string> {
 
   /// Set the initial value if not present
   const initialValue = 'com.apple.Safari'
-  await db.set(['default_browser'], initialValue)
+  await db.set(kvKey, initialValue)
   return initialValue
 }
 
@@ -38,7 +40,7 @@ export const handleSetBrowser = async (context: Context) => {
   }
 
   const db = await Deno.openKv()
-  await db.set(['default_browser'], browser)
+  await db.set(kvKey, browser)
 
   context.response.body = 'OK'
 }

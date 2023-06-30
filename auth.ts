@@ -1,4 +1,5 @@
-import { load, Context } from './deps.ts'
+import { Context } from 'oak/mod.ts'
+import { load } from 'dotenv/mod.ts'
 
 /// Check if the required environment variables are set
 let { TOKEN } = Deno.env.toObject()

@@ -1,4 +1,4 @@
-import { Router } from './deps.ts'
+import { Router } from 'oak/mod.ts'
 import { handleGetBrowser, handleSetBrowser } from './browser.ts'
 
 // Create a new router instance

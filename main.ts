@@ -1,4 +1,4 @@
-import { Application } from './deps.ts'
+import { Application } from 'oak/mod.ts'
 import { router } from './router.ts'
 
 // Create a new Oak application instance
