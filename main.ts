@@ -14,6 +14,18 @@ app.use((context) => {
   context.response.body = '404 Not Found'
 })
 
+// Add an error handler
+app.use(async (context, next) => {
+  try {
+    await next()
+  } catch (err) {
+    context.response.status = err.status ?? 500
+    context.response.body = {
+      error: err.message,
+    }
+  }
+})
+
 // Start the server
 const port = 8000
 console.log(`Listening on http://localhost:${port}`)

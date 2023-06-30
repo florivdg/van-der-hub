@@ -1,5 +1,5 @@
 import { Router } from 'oak/mod.ts'
-import { handleGetBrowser, handleSetBrowser } from './browser.ts'
+import { handleGetBrowser, handleLiveBrowser, handleSetBrowser } from './browser.ts'
 
 // Create a new router instance
 const router = new Router()
@@ -11,5 +11,6 @@ router
   })
   .get('/browser/get', handleGetBrowser)
   .post('/browser/set', handleSetBrowser)
+  .get('/browser/live', handleLiveBrowser)
 
 export { router }

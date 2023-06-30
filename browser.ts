@@ -9,8 +9,20 @@ const KV_KEY = ['default_browser']
 const stored = await loadFromKv()
 const browser = new Reactive(stored)
 
-/// Subscribe to changes to the default browser and update the Deno.Kv storage
+/// Create a BroadcastChannel to communicate with other edge instances
+const channel = new BroadcastChannel('earth')
+
+/// Handle messages from other edge instances
+channel.onmessage = (event) => {
+  console.log(`Received message from the earth: ${event.data}`, event)
+}
+
+/// Subscribe to changes to the default browser
 browser.subscribe(async (value) => {
+  /// Broadcast the change to all edge instances
+  channel.postMessage(value)
+
+  /// Update the value in Deno.Kv
   const db = await Deno.openKv()
   await db.set(KV_KEY, value)
 
@@ -63,4 +75,20 @@ export const handleSetBrowser = async (context: Context) => {
   browser.value = newBrowser
 
   context.response.body = 'OK'
+}
+
+/**
+ * Handle the GET /browser/live request that sends events when the default browser changes
+ * @param context The oak context
+ */
+export const handleLiveBrowser = (context: Context) => {
+  const target = context.sendEvents()
+
+  /// Subscribe to changes to the default browser
+  browser.subscribe((value) => {
+    target.dispatchMessage({ browser: value })
+  })
+
+  /// Send the initial value
+  target.dispatchMessage({ browser: browser.value })
 }
