@@ -92,9 +92,12 @@ export const handleLiveBrowser = (context: Context) => {
   const target = context.sendEvents({ keepAlive: true })
 
   /// Subscribe to changes to the default browser
-  browser.subscribe((value) => {
+  const unsubscribe = browser.subscribe((value) => {
     target.dispatchMessage(value)
   })
+
+  /// Unsubscribe when the connection closes
+  target.addEventListener('close', unsubscribe)
 
   /// Send the initial value
   target.dispatchMessage(browser.value)
