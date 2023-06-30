@@ -14,7 +14,9 @@ const channel = new BroadcastChannel('earth')
 
 /// Handle messages from other edge instances
 channel.onmessage = (event) => {
-  console.log(`Received message from the earth: ${event.data}`, event)
+  if (event.data === browser.value) return
+
+  browser.value = event.data
 }
 
 /// Subscribe to changes to the default browser
