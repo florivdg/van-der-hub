@@ -1,16 +1,18 @@
-import { Router } from 'oak/mod.ts'
+import { Hono } from 'hono'
+import { cors } from 'hono/middleware'
 import { handleGetBrowser, handleLiveBrowser, handleSetBrowser } from './browser.ts'
+import { bearerAuthMiddleware } from './auth.ts'
 
 // Create a new router instance
-const router = new Router()
+const browserRouter = new Hono()
 
 // Define the routes
-router
-  .get('/', (context) => {
-    context.response.body = 'Welcome on VanDerHub!'
-  })
-  .get('/browser/get', handleGetBrowser)
-  .post('/browser/set', handleSetBrowser)
-  .get('/browser/live', handleLiveBrowser)
+browserRouter.get('/get', handleGetBrowser).post('/set', handleSetBrowser).get('/live', handleLiveBrowser)
 
-export { router }
+// CORS
+browserRouter.use('/live', cors())
+
+// Auth
+browserRouter.use('/set', bearerAuthMiddleware)
+
+export { browserRouter }

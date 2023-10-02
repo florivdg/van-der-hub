@@ -1,5 +1,4 @@
-import { Context } from 'oak/mod.ts'
-import { isAuthorized } from './auth.ts'
+import { Context } from 'hono'
 import Reactive from './classes/Reactive.ts'
 
 /// The key used to store the default browser in Deno.Kv
@@ -51,54 +50,49 @@ async function loadFromKv(): Promise<string> {
 
 /**
  * Handle the GET /browser request
- * @param context The oak context
+ * @param c The Hono context
  */
-export const handleGetBrowser = (context: Context) => {
-  const json = JSON.stringify({ browser: browser.value })
-  context.response.body = json
-  context.response.headers.set('content-type', 'application/json')
-}
+export const handleGetBrowser = (c: Context) => c.json({ browser: browser.value })
 
 /**
  * Handle the POST /browser request
- * @param context The oak context
+ * @param c The Hono context
  */
-export const handleSetBrowser = async (context: Context) => {
-  /// Make sure the request is authorized
-  if (!isAuthorized(context)) return
-
-  const { browser: newBrowser } = await context.request.body({ type: 'json' }).value
+export const handleSetBrowser = async (c: Context) => {
+  const { browser: newBrowser } = await c.req.json()
   if (!newBrowser || typeof newBrowser !== 'string') {
-    context.response.status = 400
-    context.response.body = 'Missing browser value'
-    return
+    c.status(400)
+    return c.text('Missing browser value')
   }
 
   browser.value = newBrowser
 
-  context.response.body = 'OK'
+  return c.text('OK')
 }
 
 /**
  * Handle the GET /browser/live request that sends events when the default browser changes
- * @param context The oak context
+ * @param c The Hono context
  */
-export const handleLiveBrowser = (context: Context) => {
-  context.request.accepts('text/event-stream')
+export const handleLiveBrowser = (c: Context) => {
+  if (c.req.header('accept') !== 'text/event-stream' || c.req.header('upgrade') !== 'websocket') {
+    c.status(501)
+    return c.text('Need to accept text/event-stream and allow upgrade to WebSocket connection')
+  }
 
-  /// Set CORS headers
-  const headers = new Headers([['access-control-allow-origin', '*']])
-  context.response.headers = headers
-  const target = context.sendEvents({ keepAlive: true })
+  /// Upgrade the request to a WebSocket connection
+  const { response, socket } = Deno.upgradeWebSocket(c.req.raw)
 
   /// Subscribe to changes to the default browser
   const unsubscribe = browser.subscribe((value) => {
-    target.dispatchMessage(value)
+    socket.send(value)
   })
 
   /// Unsubscribe when the connection closes
-  target.addEventListener('close', unsubscribe)
+  socket.addEventListener('close', unsubscribe)
 
   /// Send the initial value
-  target.dispatchMessage(browser.value)
+  socket.send(browser.value)
+
+  return response
 }

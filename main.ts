@@ -1,32 +1,31 @@
-import { Application } from 'oak/mod.ts'
-import { router } from './router.ts'
+import { Hono } from 'hono'
+import { browserRouter } from './router.ts'
 
-// Create a new Oak application instance
-const app = new Application()
+// Create a new Hono instance
+const app = new Hono()
 
 // Use the router middleware
-app.use(router.routes())
-app.use(router.allowedMethods())
+app.route('/browser', browserRouter)
 
 // Add a not found route
-app.use((context) => {
-  context.response.status = 404
-  context.response.body = '404 Not Found'
+app.notFound((c) => {
+  return c.json({ success: false, message: '404 Not Found' })
 })
 
 // Add an error handler
-app.use(async (context, next) => {
+app.use(async (c, next) => {
   try {
     await next()
   } catch (err) {
-    context.response.status = err.status ?? 500
-    context.response.body = {
-      error: err.message,
-    }
+    c.status = err.status ?? 500
+    return c.json({
+      success: false,
+      message: err.message ?? 'An unknown error occurred',
+    })
   }
 })
 
 // Start the server
 const port = 8000
 console.log(`Listening on http://localhost:${port}`)
-await app.listen({ port })
+Deno.serve({ port }, app.fetch)
