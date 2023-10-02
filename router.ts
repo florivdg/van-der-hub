@@ -6,13 +6,13 @@ import { bearerAuthMiddleware } from './auth.ts'
 // Create a new router instance
 const browserRouter = new Hono()
 
-// Define the routes
-browserRouter.get('/get', handleGetBrowser).post('/set', handleSetBrowser).get('/live', handleLiveBrowser)
-
 // CORS
 browserRouter.use('/live', cors())
 
 // Auth
 browserRouter.use('/set', bearerAuthMiddleware)
+
+// Define the routes
+browserRouter.get('/get', handleGetBrowser).post('/set', handleSetBrowser).get('/live', handleLiveBrowser)
 
 export { browserRouter }
