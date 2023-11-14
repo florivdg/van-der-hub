@@ -71,28 +71,49 @@ export const handleSetBrowser = async (c: Context) => {
 }
 
 /**
+ * Map of subscribers with their corresponding unsubscribe functions.
+ */
+const subscribers = new Map<string, () => void>()
+
+/**
  * Handle the GET /browser/live request that sends events when the default browser changes
  * @param c The Hono context
  */
-export const handleLiveBrowser = (c: Context) => {
-  if (c.req.header('accept') !== 'text/event-stream' || c.req.header('upgrade') !== 'websocket') {
-    c.status(501)
-    return c.text('Need to accept text/event-stream and allow upgrade to WebSocket connection')
-  }
+export const handleLiveBrowser = (_c: Context) => {
+  let id: string
 
-  /// Upgrade the request to a WebSocket connection
-  const { response, socket } = Deno.upgradeWebSocket(c.req.raw)
+  const body = new ReadableStream({
+    start(controller) {
+      // Generate a unique identifier for the subscription
+      id = Math.random().toString(36).substring(2, 15)
 
-  /// Subscribe to changes to the default browser
-  const unsubscribe = browser.subscribe((value) => {
-    socket.send(value)
+      // Subscribe to changes to the default browser
+      const unsubscribe = browser.subscribe((value) => {
+        controller.enqueue(value)
+      })
+
+      // Store the unsubscribe function in the subscribers map
+      subscribers.set(id, unsubscribe)
+
+      // Send the initial value
+      controller.enqueue(browser.value)
+    },
+    cancel() {
+      // Retrieve the unsubscribe function from the subscribers map and call it
+      const unsubscribe = subscribers.get(id)
+      if (unsubscribe) unsubscribe()
+
+      // Remove the entry from the subscribers map
+      subscribers.delete(id)
+    },
   })
 
-  /// Unsubscribe when the connection closes
-  socket.addEventListener('close', unsubscribe)
-
-  /// Send the initial value
-  socket.send(browser.value)
-
-  return response
+  return new Response(body, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    },
+  })
 }
