@@ -1,6 +1,8 @@
 {
   "imports": {
-    "oak/": "https://deno.land/x/oak@v12.5.0/",
-    "dotenv/": "https://deno.land/std@0.192.0/dotenv/"
+    "hono": "https://deno.land/x/hono@v3.10.1/mod.ts",
+    "hono/middleware": "https://deno.land/x/hono@v3.10.1/middleware.ts",
+    "hono/helper": "https://deno.land/x/hono@v3.10.1/helper.ts",
+    "dotenv/": "https://deno.land/std@0.207.0/dotenv/"
   }
 }

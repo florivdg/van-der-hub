@@ -1,4 +1,4 @@
-import { Context } from 'oak/mod.ts'
+import { bearerAuth } from 'hono/middleware'
 import { load } from 'dotenv/mod.ts'
 
 /// Check if the required environment variables are set
@@ -12,12 +12,4 @@ if (!TOKEN) {
   if (!TOKEN) throw new Error('Environment variable "TOKEN" is not set!')
 }
 
-export const isAuthorized = (context: Context) => {
-  const token = context.request.headers.get('Authorization')
-  if (!TOKEN || token !== `Bearer ${TOKEN}`) {
-    context.response.body = 'Unauthorized'
-    context.response.status = 401
-    return false
-  }
-  return true
-}
+export const bearerAuthMiddleware = bearerAuth({ token: TOKEN })

@@ -1,5 +1,4 @@
-import { Context } from 'oak/mod.ts'
-import { isAuthorized } from './auth.ts'
+import { Context } from 'hono'
 import Reactive from './classes/Reactive.ts'
 
 /// The key used to store the default browser in Deno.Kv
@@ -51,54 +50,80 @@ async function loadFromKv(): Promise<string> {
 
 /**
  * Handle the GET /browser request
- * @param context The oak context
+ * @param c The Hono context
  */
-export const handleGetBrowser = (context: Context) => {
-  const json = JSON.stringify({ browser: browser.value })
-  context.response.body = json
-  context.response.headers.set('content-type', 'application/json')
-}
+export const handleGetBrowser = (c: Context) => c.json({ browser: browser.value })
 
 /**
  * Handle the POST /browser request
- * @param context The oak context
+ * @param c The Hono context
  */
-export const handleSetBrowser = async (context: Context) => {
-  /// Make sure the request is authorized
-  if (!isAuthorized(context)) return
-
-  const { browser: newBrowser } = await context.request.body({ type: 'json' }).value
+export const handleSetBrowser = async (c: Context) => {
+  const { browser: newBrowser } = await c.req.json()
   if (!newBrowser || typeof newBrowser !== 'string') {
-    context.response.status = 400
-    context.response.body = 'Missing browser value'
-    return
+    c.status(400)
+    return c.text('Missing browser value')
   }
 
   browser.value = newBrowser
 
-  context.response.body = 'OK'
+  return c.text('OK')
+}
+
+/**
+ * Map of subscribers with their corresponding unsubscribe functions.
+ */
+const subscribers = new Map<string, () => void>()
+
+/**
+ * Enqueues a value to the given ReadableStream controller.
+ * The value is encoded as a UTF-8 string and prepended with "data: ".
+ * Each value is separated by two newline character.
+ *
+ * @param {ReadableStreamDefaultController<Uint8Array>} controller - The ReadableStream controller.
+ * @param {string} value - The value to enqueue.
+ */
+const enqueue = (controller: ReadableStreamDefaultController<Uint8Array>, value: string) => {
+  const encodedValue = new TextEncoder().encode(`data: ${value}\n\n`)
+  controller.enqueue(encodedValue)
 }
 
 /**
  * Handle the GET /browser/live request that sends events when the default browser changes
- * @param context The oak context
+ * @param c The Hono context
  */
-export const handleLiveBrowser = (context: Context) => {
-  context.request.accepts('text/event-stream')
+export const handleLiveBrowser = (c: Context) => {
+  // Generate a unique identifier for the subscription
+  const id = Math.random().toString(36).substring(2, 15)
 
-  /// Set CORS headers
-  const headers = new Headers([['access-control-allow-origin', '*']])
-  context.response.headers = headers
-  const target = context.sendEvents({ keepAlive: true })
+  const body = new ReadableStream({
+    start(controller) {
+      // Subscribe to changes to the default browser
+      const unsubscribe = browser.subscribe((value) => {
+        enqueue(controller, value)
+      })
 
-  /// Subscribe to changes to the default browser
-  const unsubscribe = browser.subscribe((value) => {
-    target.dispatchMessage(value)
+      // Store the unsubscribe function in the subscribers map
+      subscribers.set(id, unsubscribe)
+
+      // Send the initial value
+      enqueue(controller, browser.value)
+    },
+    cancel() {
+      // Retrieve the unsubscribe function from the subscribers map and call it
+      const unsubscribe = subscribers.get(id)
+      if (unsubscribe) unsubscribe()
+
+      // Remove the entry from the subscribers map
+      subscribers.delete(id)
+    },
   })
 
-  /// Unsubscribe when the connection closes
-  target.addEventListener('close', unsubscribe)
+  // Set the headers
+  c.header('Access-Control-Allow-Origin', '*')
+  c.header('Content-Type', 'text/event-stream')
+  c.header('Cache-Control', 'no-cache')
+  c.header('Connection', 'keep-alive')
 
-  /// Send the initial value
-  target.dispatchMessage(browser.value)
+  return c.body(body)
 }

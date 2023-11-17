@@ -3,9 +3,6 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,macos,deno
 
 ### Deno ###
-/.idea/
-/.vscode/
-
 /node_modules
 
 .env
