@@ -119,12 +119,11 @@ export const handleLiveBrowser = (c: Context) => {
     },
   })
 
-  return c.streamText(async (stream) => {
-    try {
-      await stream.pipe(body) // Pipe a readable stream
-    } catch (_error) {
-      // The client closed the connection
-      stream.close()
-    }
-  })
+  // Set the headers
+  c.header('Access-Control-Allow-Origin', '*')
+  c.header('Content-Type', 'text/event-stream')
+  c.header('Cache-Control', 'no-cache')
+  c.header('Connection', 'keep-alive')
+
+  return c.body(body)
 }
