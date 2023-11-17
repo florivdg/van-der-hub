@@ -76,27 +76,38 @@ export const handleSetBrowser = async (c: Context) => {
 const subscribers = new Map<string, () => void>()
 
 /**
+ * Enqueues a value to the given ReadableStream controller.
+ * The value is encoded as a UTF-8 string and prepended with "data: ".
+ * Each value is separated by two newline character.
+ *
+ * @param {ReadableStreamDefaultController<Uint8Array>} controller - The ReadableStream controller.
+ * @param {string} value - The value to enqueue.
+ */
+const enqueue = (controller: ReadableStreamDefaultController<Uint8Array>, value: string) => {
+  const encodedValue = new TextEncoder().encode(`data: ${value}\n\n`)
+  controller.enqueue(encodedValue)
+}
+
+/**
  * Handle the GET /browser/live request that sends events when the default browser changes
  * @param c The Hono context
  */
-export const handleLiveBrowser = (_c: Context) => {
-  let id: string
+export const handleLiveBrowser = (c: Context) => {
+  // Generate a unique identifier for the subscription
+  const id = Math.random().toString(36).substring(2, 15)
 
   const body = new ReadableStream({
     start(controller) {
-      // Generate a unique identifier for the subscription
-      id = Math.random().toString(36).substring(2, 15)
-
       // Subscribe to changes to the default browser
       const unsubscribe = browser.subscribe((value) => {
-        controller.enqueue(value)
+        enqueue(controller, value)
       })
 
       // Store the unsubscribe function in the subscribers map
       subscribers.set(id, unsubscribe)
 
       // Send the initial value
-      controller.enqueue(browser.value)
+      enqueue(controller, browser.value)
     },
     cancel() {
       // Retrieve the unsubscribe function from the subscribers map and call it
@@ -108,12 +119,12 @@ export const handleLiveBrowser = (_c: Context) => {
     },
   })
 
-  return new Response(body, {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-    },
+  return c.streamText(async (stream) => {
+    try {
+      await stream.pipe(body) // Pipe a readable stream
+    } catch (_error) {
+      // The client closed the connection
+      stream.close()
+    }
   })
 }
