@@ -1,11 +1,12 @@
 import { Hono } from 'hono'
-import { browserRouter } from './router.ts'
+import { browserRouter, notiRouter } from './router.ts'
 
 // Create a new Hono instance
 const app = new Hono()
 
 // Use the router middleware
 app.route('/browser', browserRouter)
+app.route('/noti', notiRouter)
 
 // Add a not found route
 app.notFound((c) => {
@@ -27,5 +28,4 @@ app.use(async (c, next) => {
 
 // Start the server
 const port = 8000
-console.log(`Listening on http://localhost:${port}`)
 Deno.serve({ port }, app.fetch)
