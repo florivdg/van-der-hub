@@ -7,7 +7,7 @@ const KV_KEY = ['default_browser']
 /// Initialize the default browser value from Deno.Kv
 const stored = await loadFromKv()
 
-// Replace Reactive with alien-signals signal
+// Store browser in reactive signal
 const browser = signal(stored)
 
 // Create a BroadcastChannel to communicate with other edge instances
