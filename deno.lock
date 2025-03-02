@@ -3,7 +3,8 @@
   "specifiers": {
     "jsr:@hono/hono@^4.7.2": "4.7.2",
     "npm:@biomejs/biome@*": "1.9.4",
-    "npm:@biomejs/biome@^1.9.4": "1.9.4"
+    "npm:@biomejs/biome@^1.9.4": "1.9.4",
+    "npm:alien-signals@^1.0.4": "1.0.4"
   },
   "jsr": {
     "@hono/hono@4.7.2": {
@@ -47,12 +48,16 @@
     },
     "@biomejs/cli-win32-x64@1.9.4": {
       "integrity": "sha512-8Y5wMhVIPaWe6jw2H+KlEm4wP/f7EW3810ZLmDlrEEy5KvBsb9ECEfu/kMWD484ijfQ8+nIi0giMgu9g1UAuuA=="
+    },
+    "alien-signals@1.0.4": {
+      "integrity": "sha512-DJqqQD3XcsaQcQ1s+iE2jDUZmmQpXwHiR6fCAim/w87luaW+vmLY8fMlrdkmRwzaFXhkxf3rqPCR59tKVv1MDw=="
     }
   },
   "workspace": {
     "dependencies": [
       "jsr:@hono/hono@^4.7.2",
-      "npm:@biomejs/biome@^1.9.4"
+      "npm:@biomejs/biome@^1.9.4",
+      "npm:alien-signals@^1.0.4"
     ]
   }
 }
