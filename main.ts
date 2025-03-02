@@ -1,6 +1,6 @@
 import { Hono } from '@hono/hono'
 import { HTTPException } from '@hono/hono/http-exception'
-import { browserRouter, notiRouter } from './router.ts'
+import { browserRouter, notiRouter } from './lib/router.ts'
 
 // Create a new Hono instance
 const app = new Hono()
