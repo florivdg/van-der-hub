@@ -1,4 +1,5 @@
-import { Hono } from 'hono'
+import { Hono } from '@hono/hono'
+import { HTTPException } from '@hono/hono/http-exception'
 import { browserRouter, notiRouter } from './router.ts'
 
 // Create a new Hono instance
@@ -18,11 +19,13 @@ app.use(async (c, next) => {
   try {
     await next()
   } catch (err) {
-    c.status = err.status ?? 500
-    return c.json({
-      success: false,
-      message: err.message ?? 'An unknown error occurred',
-    })
+    if (err instanceof HTTPException) {
+      c.status(err.status ?? 500)
+      return c.json({
+        success: false,
+        message: err.message ?? 'An unknown error occurred',
+      })
+    }
   }
 })
 

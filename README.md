@@ -8,4 +8,4 @@ This tool serves as a central hub for utilities and dynamic server-based feature
 deno task start
 ```
 
-Make sure to set a `TOKEN` env var in order protect routes.
+Make sure to set environment variables in a `.env` file, see `.env.sample` for an example.

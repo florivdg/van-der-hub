@@ -1,5 +1,5 @@
-import { Hono } from 'hono'
-import { cors } from 'hono/middleware'
+import { Hono } from '@hono/hono'
+import { cors } from '@hono/hono/cors'
 import { handleGetBrowser, handleLiveBrowser, handleSetBrowser } from './browser.ts'
 import { bearerAuthMiddleware } from './auth.ts'
 import { handleBroadcastMessage } from './noti.ts'

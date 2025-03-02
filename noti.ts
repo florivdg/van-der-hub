@@ -1,18 +1,9 @@
-import type { Context } from 'hono'
-import { load } from 'dotenv/mod.ts'
+import type { Context } from '@hono/hono'
 
 /// Check if the required environment variables are set
-let { TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID } = Deno.env.toObject()
-if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-  /// In development, we need to load the .env file
-  /// On Deno Deploy, the environment variables are already set
-  const conf = await load()
-  TELEGRAM_BOT_TOKEN = conf.TELEGRAM_BOT_TOKEN
-  TELEGRAM_CHAT_ID = conf.TELEGRAM_CHAT_ID
-
-  if (!TELEGRAM_BOT_TOKEN) throw new Error('Environment variable "TELEGRAM_BOT_TOKEN" is not set!')
-  if (!TELEGRAM_CHAT_ID) throw new Error('Environment variable "TELEGRAM_CHAT_ID" is not set!')
-}
+const { TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID } = Deno.env.toObject()
+if (!TELEGRAM_BOT_TOKEN) throw new Error('Environment variable "TELEGRAM_BOT_TOKEN" is not set!')
+if (!TELEGRAM_CHAT_ID) throw new Error('Environment variable "TELEGRAM_CHAT_ID" is not set!')
 
 /**
  * Sends a message to a Telegram chat using the provided bot token and chat ID.

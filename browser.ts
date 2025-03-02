@@ -1,4 +1,4 @@
-import { Context } from 'hono'
+import { Context } from '@hono/hono'
 import Reactive from './classes/Reactive.ts'
 
 /// The key used to store the default browser in Deno.Kv
