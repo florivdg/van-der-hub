@@ -6,7 +6,11 @@
   "imports": {
     "@biomejs/biome": "npm:@biomejs/biome@^1.9.4",
     "@hono/hono": "jsr:@hono/hono@^4.7.2",
-    "alien-signals": "npm:alien-signals@^1.0.4"
+    "@libsql/client": "npm:@libsql/client@^0.14.0",
+    "alien-signals": "npm:alien-signals@^1.0.4",
+    "drizzle-kit": "npm:drizzle-kit@^0.30.5",
+    "drizzle-orm": "npm:drizzle-orm@^0.40.0",
+    "tsx": "npm:tsx@^4.19.3"
   },
   "nodeModulesDir": "auto"
 }
