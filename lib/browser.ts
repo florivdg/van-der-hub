@@ -1,5 +1,6 @@
 import type { Context } from '@hono/hono'
 import { effect, signal } from 'alien-signals'
+import { desc } from 'drizzle-orm'
 import { db } from './db/index.ts'
 import { browsersTable } from './db/schema.ts'
 
@@ -54,6 +55,20 @@ async function loadFromKv(): Promise<string> {
  * @param c The Hono context
  */
 export const handleGetBrowser = (c: Context) => c.json({ browser: browser() })
+
+/**
+ * Handle the GET /browser/history request
+ * @param c The Hono context
+ */
+export const handleGetBrowserHistory = async (c: Context) => {
+  const limit = c.req.query('limit')
+  const entries = await db
+    .select()
+    .from(browsersTable)
+    .orderBy(desc(browsersTable.createdAt))
+    .limit(limit ? Number(limit) : 10)
+  return c.json(entries)
+}
 
 /**
  * Handle the POST /browser request
