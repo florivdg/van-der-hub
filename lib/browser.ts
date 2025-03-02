@@ -1,6 +1,6 @@
 import type { Context } from '@hono/hono'
 import { effect, signal } from 'alien-signals'
-import { desc } from 'drizzle-orm'
+import { desc, gt, sql } from 'drizzle-orm'
 import { db } from './db/index.ts'
 import { browsersTable } from './db/schema.ts'
 
@@ -68,6 +68,73 @@ export const handleGetBrowserHistory = async (c: Context) => {
     .orderBy(desc(browsersTable.createdAt))
     .limit(limit ? Number(limit) : 10)
   return c.json(entries)
+}
+
+/**
+ * Handle the GET /browser/stats request
+ * @param c The Hono context
+ */
+export const handleGetBrowserStats = async (c: Context) => {
+  const daysParam = c.req.query('days')
+  let threshold: number | undefined = undefined
+
+  if (!daysParam) {
+    threshold = Math.floor(Date.now() / 1000) - 30 * 86400
+  } else if (daysParam !== 'all') {
+    const daysNum = Number(daysParam)
+    if (!Number.isNaN(daysNum)) {
+      threshold = Math.floor(Date.now() / 1000) - daysNum * 86400
+    }
+  } else {
+    // set to first unix timestamp
+    threshold = 0
+  }
+
+  // Build the query
+  const query = db
+    .select()
+    .from(browsersTable)
+    .orderBy(desc(browsersTable.createdAt))
+    .where(gt(browsersTable.createdAt, sql`${threshold}`))
+
+  // Execute the query
+  const entries = await query.all()
+
+  // Compute browser distribution: count of each browserKey.
+  const browserDistribution = entries.reduce(
+    (acc, entry) => {
+      acc[entry.browserKey] = (acc[entry.browserKey] || 0) + 1
+      return acc
+    },
+    {} as Record<string, number>,
+  )
+
+  // Compute machine (Mac) distribution: count of each machineKey.
+  const machineDistribution = entries.reduce(
+    (acc, entry) => {
+      acc[entry.machineKey] = (acc[entry.machineKey] || 0) + 1
+      return acc
+    },
+    {} as Record<string, number>,
+  )
+
+  // Compute browser distribution separated by machines
+  const machineBrowserDistribution = entries.reduce(
+    (acc, entry) => {
+      if (!acc[entry.machineKey]) acc[entry.machineKey] = {}
+      acc[entry.machineKey][entry.browserKey] = (acc[entry.machineKey][entry.browserKey] || 0) + 1
+      return acc
+    },
+    {} as Record<string, Record<string, number>>,
+  )
+
+  // Return all the stats as JSON.
+  return c.json({
+    totalEntries: entries.length,
+    browserDistribution,
+    machineDistribution,
+    machineBrowserDistribution,
+  })
 }
 
 /**

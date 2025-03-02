@@ -1,7 +1,13 @@
 import { Hono } from '@hono/hono'
 import { cors } from '@hono/hono/cors'
 import { bearerAuthMiddleware } from './auth.ts'
-import { handleGetBrowser, handleGetBrowserHistory, handleLiveBrowser, handleSetBrowser } from './browser.ts'
+import {
+  handleGetBrowser,
+  handleGetBrowserHistory,
+  handleGetBrowserStats,
+  handleLiveBrowser,
+  handleSetBrowser,
+} from './browser.ts'
 import { handleBroadcastMessage } from './noti.ts'
 
 // Create a new router instance
@@ -19,6 +25,7 @@ browserRouter
   .post('/set', handleSetBrowser)
   .get('/live', handleLiveBrowser)
   .get('/history', handleGetBrowserHistory)
+  .get('/stats', handleGetBrowserStats)
 
 // Create a noti namespace router
 const notiRouter = new Hono()
