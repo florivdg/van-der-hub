@@ -1,6 +1,7 @@
 import type { Context } from '@hono/hono'
 import { effect, signal } from 'alien-signals'
-import { desc } from 'drizzle-orm'
+import { desc, gt, sql } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from './db/index.ts'
 import { browsersTable } from './db/schema.ts'
 
@@ -68,6 +69,83 @@ export const handleGetBrowserHistory = async (c: Context) => {
     .orderBy(desc(browsersTable.createdAt))
     .limit(limit ? Number(limit) : 10)
   return c.json(entries)
+}
+
+/**
+ * Handle the GET /browser/stats request
+ * @param c The Hono context
+ */
+export const handleGetBrowserStats = async (c: Context) => {
+  // Get and validate the days query parameter using zod
+  const daysParam = c.req.query('days')
+  let threshold: number
+  let effectiveDays: number | string
+
+  if (daysParam) {
+    const daysSchema = z.union([z.literal('all'), z.preprocess((val) => Number(val), z.number().int().min(1))])
+    const parsed = daysSchema.safeParse(daysParam)
+    if (!parsed.success) {
+      c.status(400)
+      return c.json({ error: 'Invalid days parameter: must be "all" or an integer >= 1' })
+    }
+    if (parsed.data === 'all') {
+      threshold = 0
+      effectiveDays = 'all'
+    } else {
+      threshold = Math.floor(Date.now() / 1000) - parsed.data * 86400
+      effectiveDays = parsed.data
+    }
+  } else {
+    threshold = Math.floor(Date.now() / 1000) - 30 * 86400
+    effectiveDays = 30
+  }
+
+  // Build the query
+  const query = db
+    .select()
+    .from(browsersTable)
+    .orderBy(desc(browsersTable.createdAt))
+    .where(gt(browsersTable.createdAt, sql`${threshold}`))
+
+  // Execute the query
+  const entries = await query.all()
+
+  // Compute browser distribution: count of each browserKey.
+  const browserDistribution = entries.reduce(
+    (acc, entry) => {
+      acc[entry.browserKey] = (acc[entry.browserKey] || 0) + 1
+      return acc
+    },
+    {} as Record<string, number>,
+  )
+
+  // Compute machine (Mac) distribution: count of each machineKey.
+  const machineDistribution = entries.reduce(
+    (acc, entry) => {
+      acc[entry.machineKey] = (acc[entry.machineKey] || 0) + 1
+      return acc
+    },
+    {} as Record<string, number>,
+  )
+
+  // Compute browser distribution separated by machines
+  const machineBrowserDistribution = entries.reduce(
+    (acc, entry) => {
+      if (!acc[entry.machineKey]) acc[entry.machineKey] = {}
+      acc[entry.machineKey][entry.browserKey] = (acc[entry.machineKey][entry.browserKey] || 0) + 1
+      return acc
+    },
+    {} as Record<string, Record<string, number>>,
+  )
+
+  // Return all the stats as JSON.
+  return c.json({
+    totalEntries: entries.length,
+    days: effectiveDays,
+    browserDistribution,
+    machineDistribution,
+    machineBrowserDistribution,
+  })
 }
 
 /**

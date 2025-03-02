@@ -10,7 +10,8 @@
     "alien-signals": "npm:alien-signals@^1.0.4",
     "drizzle-kit": "npm:drizzle-kit@^0.30.5",
     "drizzle-orm": "npm:drizzle-orm@^0.40.0",
-    "tsx": "npm:tsx@^4.19.3"
+    "tsx": "npm:tsx@^4.19.3",
+    "zod": "npm:zod@^3.24.2"
   },
   "nodeModulesDir": "auto"
 }
