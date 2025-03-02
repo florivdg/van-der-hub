@@ -1,6 +1,7 @@
 import type { Context } from '@hono/hono'
 import { effect, signal } from 'alien-signals'
 import { desc, gt, sql } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from './db/index.ts'
 import { browsersTable } from './db/schema.ts'
 
@@ -75,19 +76,28 @@ export const handleGetBrowserHistory = async (c: Context) => {
  * @param c The Hono context
  */
 export const handleGetBrowserStats = async (c: Context) => {
+  // Get and validate the days query parameter using zod
   const daysParam = c.req.query('days')
-  let threshold: number | undefined = undefined
+  let threshold: number
+  let effectiveDays: number | string
 
-  if (!daysParam) {
-    threshold = Math.floor(Date.now() / 1000) - 30 * 86400
-  } else if (daysParam !== 'all') {
-    const daysNum = Number(daysParam)
-    if (!Number.isNaN(daysNum)) {
-      threshold = Math.floor(Date.now() / 1000) - daysNum * 86400
+  if (daysParam) {
+    const daysSchema = z.union([z.literal('all'), z.preprocess((val) => Number(val), z.number().int().min(1))])
+    const parsed = daysSchema.safeParse(daysParam)
+    if (!parsed.success) {
+      c.status(400)
+      return c.json({ error: 'Invalid days parameter: must be "all" or an integer >= 1' })
+    }
+    if (parsed.data === 'all') {
+      threshold = 0
+      effectiveDays = 'all'
+    } else {
+      threshold = Math.floor(Date.now() / 1000) - parsed.data * 86400
+      effectiveDays = parsed.data
     }
   } else {
-    // set to first unix timestamp
-    threshold = 0
+    threshold = Math.floor(Date.now() / 1000) - 30 * 86400
+    effectiveDays = 30
   }
 
   // Build the query
@@ -131,6 +141,7 @@ export const handleGetBrowserStats = async (c: Context) => {
   // Return all the stats as JSON.
   return c.json({
     totalEntries: entries.length,
+    days: effectiveDays,
     browserDistribution,
     machineDistribution,
     machineBrowserDistribution,
