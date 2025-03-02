@@ -1,7 +1,7 @@
 import { Hono } from '@hono/hono'
 import { cors } from '@hono/hono/cors'
-import { handleGetBrowser, handleLiveBrowser, handleSetBrowser } from './browser.ts'
 import { bearerAuthMiddleware } from './auth.ts'
+import { handleGetBrowser, handleLiveBrowser, handleSetBrowser } from './browser.ts'
 import { handleBroadcastMessage } from './noti.ts'
 
 // Create a new router instance
