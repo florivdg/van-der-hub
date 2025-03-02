@@ -14,7 +14,11 @@ import { handleBroadcastMessage } from './noti.ts'
 const browserRouter = new Hono()
 
 // CORS
-browserRouter.use('/live', cors())
+const corsWithOrigins = cors({
+  origin: ['http://localhost:4321', 'https://flori.dev'],
+})
+browserRouter.use('/live', corsWithOrigins)
+browserRouter.use('/stats', corsWithOrigins)
 
 // Auth
 browserRouter.use('/set', bearerAuthMiddleware)
