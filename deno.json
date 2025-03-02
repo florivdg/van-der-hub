@@ -1,9 +1,12 @@
 {
   "tasks": {
-    "dev": "deno run --allow-net --allow-read --allow-write --allow-env --env-file --watch main.ts",
+    "dev": "deno run --allow-net --allow-read --allow-write --allow-env --env-file --unstable-kv --unstable-broadcast-channel --watch main.ts",
     "start": "deno run --allow-net --allow-read --allow-write --allow-env main.ts"
   },
   "imports": {
-    "@hono/hono": "jsr:@hono/hono@^4.7.2"
-  }
+    "@biomejs/biome": "npm:@biomejs/biome@^1.9.4",
+    "@hono/hono": "jsr:@hono/hono@^4.7.2",
+    "alien-signals": "npm:alien-signals@^1.0.4"
+  },
+  "nodeModulesDir": "auto"
 }
