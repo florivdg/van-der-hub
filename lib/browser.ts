@@ -1,33 +1,31 @@
 import type { Context } from '@hono/hono'
-import Reactive from './classes/Reactive.ts'
+import { effect, signal } from 'alien-signals'
 
 /// The key used to store the default browser in Deno.Kv
 const KV_KEY = ['default_browser']
 
-/// Store the default browser in a Reactive object
+/// Initialize the default browser value from Deno.Kv
 const stored = await loadFromKv()
-const browser = new Reactive(stored)
+// Replace Reactive with alien-signals signal
+const browser = signal(stored)
 
-/// Create a BroadcastChannel to communicate with other edge instances
+// Create a BroadcastChannel to communicate with other edge instances
 const channel = new BroadcastChannel('earth')
 
-/// Handle messages from other edge instances
+// Handle messages from other edge instances
 channel.onmessage = (event) => {
-  if (event.data === browser.value) return
-
-  browser.value = event.data
+  if (event.data === browser()) return
+  browser(event.data)
 }
 
-/// Subscribe to changes to the default browser
-browser.subscribe(async (value) => {
-  /// Broadcast the change to all edge instances
-  channel.postMessage(value)
+// Subscribe to changes to the default browser using effect
+effect(async () => {
+  const newValue = browser()
+  channel.postMessage(newValue)
 
-  /// Update the value in Deno.Kv
   const db = await Deno.openKv()
-  await db.set(KV_KEY, value)
-
-  console.log(`Updated default browser to ${value}`)
+  await db.set(KV_KEY, newValue)
+  console.log(`Updated default browser to ${newValue}`)
 })
 
 /**
@@ -52,7 +50,7 @@ async function loadFromKv(): Promise<string> {
  * Handle the GET /browser request
  * @param c The Hono context
  */
-export const handleGetBrowser = (c: Context) => c.json({ browser: browser.value })
+export const handleGetBrowser = (c: Context) => c.json({ browser: browser() })
 
 /**
  * Handle the POST /browser request
@@ -65,15 +63,10 @@ export const handleSetBrowser = async (c: Context) => {
     return c.text('Missing browser value')
   }
 
-  browser.value = newBrowser
-
+  // Update via signal setter
+  browser(newBrowser)
   return c.text('OK')
 }
-
-/**
- * Map of subscribers with their corresponding unsubscribe functions.
- */
-const subscribers = new Map<string, () => void>()
 
 /**
  * Enqueues a value to the given ReadableStream controller.
@@ -93,29 +86,11 @@ const enqueue = (controller: ReadableStreamDefaultController<Uint8Array>, value:
  * @param c The Hono context
  */
 export const handleLiveBrowser = (c: Context) => {
-  // Generate a unique identifier for the subscription
-  const id = Math.random().toString(36).substring(2, 15)
-
   const body = new ReadableStream({
     start(controller) {
-      // Subscribe to changes to the default browser
-      const unsubscribe = browser.subscribe((value) => {
-        enqueue(controller, value)
+      effect(() => {
+        enqueue(controller, browser())
       })
-
-      // Store the unsubscribe function in the subscribers map
-      subscribers.set(id, unsubscribe)
-
-      // Send the initial value
-      enqueue(controller, browser.value)
-    },
-    cancel() {
-      // Retrieve the unsubscribe function from the subscribers map and call it
-      const unsubscribe = subscribers.get(id)
-      if (unsubscribe) unsubscribe()
-
-      // Remove the entry from the subscribers map
-      subscribers.delete(id)
     },
   })
 
