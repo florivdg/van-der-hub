@@ -1,5 +1,8 @@
 import type { Context } from '@hono/hono'
 import { effect, signal } from 'alien-signals'
+import { desc } from 'drizzle-orm'
+import { db } from './db/index.ts'
+import { browsersTable } from './db/schema.ts'
 
 /// The key used to store the default browser in Deno.Kv
 const KV_KEY = ['default_browser']
@@ -54,11 +57,25 @@ async function loadFromKv(): Promise<string> {
 export const handleGetBrowser = (c: Context) => c.json({ browser: browser() })
 
 /**
+ * Handle the GET /browser/history request
+ * @param c The Hono context
+ */
+export const handleGetBrowserHistory = async (c: Context) => {
+  const limit = c.req.query('limit')
+  const entries = await db
+    .select()
+    .from(browsersTable)
+    .orderBy(desc(browsersTable.createdAt))
+    .limit(limit ? Number(limit) : 10)
+  return c.json(entries)
+}
+
+/**
  * Handle the POST /browser request
  * @param c The Hono context
  */
 export const handleSetBrowser = async (c: Context) => {
-  const { browser: newBrowser } = await c.req.json()
+  const { browser: newBrowser, machine } = await c.req.json()
   if (!newBrowser || typeof newBrowser !== 'string') {
     c.status(400)
     return c.text('Missing browser value')
@@ -66,7 +83,17 @@ export const handleSetBrowser = async (c: Context) => {
 
   // Update via signal setter
   browser(newBrowser)
-  return c.text('OK')
+
+  // Persist to database
+  const entry = await db
+    .insert(browsersTable)
+    .values({
+      browserKey: newBrowser,
+      machineKey: machine ?? 'unknown',
+    })
+    .returning()
+
+  return c.json(entry)
 }
 
 /**
