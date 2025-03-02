@@ -6,6 +6,7 @@ const KV_KEY = ['default_browser']
 
 /// Initialize the default browser value from Deno.Kv
 const stored = await loadFromKv()
+
 // Replace Reactive with alien-signals signal
 const browser = signal(stored)
 
