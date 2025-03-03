@@ -1,5 +1,5 @@
 import type { Context } from '@hono/hono'
-import { effect, signal } from 'alien-signals'
+import { effect, effectScope, signal } from 'alien-signals'
 import { desc, gt, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from './db/index.ts'
@@ -194,8 +194,14 @@ const enqueue = (controller: ReadableStreamDefaultController<Uint8Array>, value:
 export const handleLiveBrowser = (c: Context) => {
   const body = new ReadableStream({
     start(controller) {
-      effect(() => {
-        enqueue(controller, browser())
+      const stopScope = effectScope(() => {
+        effect(() => {
+          try {
+            enqueue(controller, browser())
+          } catch (_) {
+            stopScope()
+          }
+        })
       })
     },
   })
