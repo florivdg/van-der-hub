@@ -138,6 +138,17 @@ export const handleGetBrowserStats = async (c: Context) => {
     {} as Record<string, Record<string, number>>,
   )
 
+  // Compute time series distribution: browser usage for each day, separated by browser
+  const timeSeriesDistribution = entries.reduce(
+    (acc, entry) => {
+      const day = new Date(Number(entry.createdAt)).toISOString().split('T')[0]
+      if (!acc[day]) acc[day] = {}
+      acc[day][entry.browserKey] = (acc[day][entry.browserKey] || 0) + 1
+      return acc
+    },
+    {} as Record<string, Record<string, number>>,
+  )
+
   // Return all the stats as JSON.
   return c.json({
     totalEntries: entries.length,
@@ -145,6 +156,7 @@ export const handleGetBrowserStats = async (c: Context) => {
     browserDistribution,
     machineDistribution,
     machineBrowserDistribution,
+    timeSeriesDistribution,
   })
 }
 
